@@ -1,58 +1,53 @@
 pipeline {
-    environment {
-        REGION='us-east-1'
-        CLUSTER='cloudstudycluster'
-        AWS_ACCOUNT='098386855668'
-        SERVICE_NAME='cloudstudy'
-        TASKDEF_NAME='cloudstuydtask'
-        TASKDEF_FILE='ecs_task_def.json'
-        DESIRED_COUNT=1
-        REPOSITORY_NAME='cloudstudy'
-        REPOSITORY_URI="${env.AWS_ACCOUNT}.dkr.ecr.${env.REGION}.amazonaws.com/${env.REPOSITORY_NAME}"
-        SONARQUBE_ENDPOINT='http://44.204.76.82/'
-        SONARQUBE_TOKEN='3a3b5f4c59c29465f5bb034485198d0faa9aea7a'
-    }
     agent any
+    
+    environment {
+        AWS_REGION = 'us-east-1'
+        AWS_ECS_CLUSTER = 'cloudstudycluster'
+        AWS_ECR_REPO = 'cloudstudyrepo'
+        DOCKER_IMAGE_TAG = 'latest'
+        SONARQUBE_URL = 'http://44.201.116.255'
+        SONARQUBE_TOKEN = credentials('3a11f651a43519c6ef486a9f3d6f850659b68667')
+    }
+    
     stages {
-        stage('Build') {
+        stage('SCM') {
             steps {
-                sh '''
-                    cd cloudstudy/
-                    echo "Building the cicd demo ngnix docker image.."
-                    docker build -t "${SERVICE_NAME}" .
-                '''  
+                checkout scm
             }
         }
-        stage('Test') {
+        
+        stage('SonarQube Analysis') {
             steps {
-                node {
-                    stage('SCM') {
-                        checkout scm
-                    }
-                    stage('SonarQube Analysis') {
-                        def mvn = tool 'Default Maven';
-                        withSonarQubeEnv() {
-                            sh "${mvn}/bin/mvn clean verify sonar:sonar -Dsonar.projectKey=cloudstudy"
-                        }
+                script {
+                    def scannerHome = tool 'SonarScanner'
+                    withSonarQubeEnv('SonarQube') {
+                        sh "${scannerHome}/bin/sonar-scanner"
                     }
                 }
             }
         }
-        stage('Deploy') {
+        
+        stage('Build and Push Docker Image') {
             steps {
-                sh '''
-                    cd cloudstudy/
-                    echo 'Deploying to Amazon ECS....'
-                    docker tag ${SERVICE_NAME}:latest ${REPOSITORY_URI}:latest
-                    eval $(aws ecr get-login --no-include-email --region ${REGION})
-                    docker push ${REPOSITORY_URI}:latest
-                    echo 'Setting desired container count to 1'
-                    aws ecs update-service --cluster ${CLUSTER} --service ${SERVICE_NAME} --task-definition ${TASKDEF_NAME} --desired-count 1
-                    echo 'Updating task definition'
-                    aws ecs register-task-definition --cli-input-json file://${TASKDEF_FILE}
-                    echo 'Deploying to ECS Cluster: ${CLUSTER}'
-                    aws ecs update-service --cluster ${CLUSTER} --service ${SERVICE_NAME} --task-definition ${TASKDEF_NAME} --desired-count ${DESIRED_COUNT} --force-new-deployment
-                '''
+                script {
+                    def dockerImage = docker.build("${AWS_ECR_REPO}:${DOCKER_IMAGE_TAG}")
+                    docker.withRegistry('https://098386855668.dkr.ecr.us-east-1.amazonaws.com', 'ecr:us-east-1:ecrcredentail') {
+                        dockerImage.push()
+                    }
+                }
+            }
+        }
+        
+        stage('Deploy to ECS') {
+            steps {
+                script {
+                    withAWS(region: "${AWS_REGION}", credentials: 'your-aws-ecrcredentail') {
+                        ecsUpdateService(cluster: "${AWS_ECS_CLUSTER}", service: 'cloudstudycluster') {
+                            taskDefinition = "${AWS_ECR_REPO}:${DOCKER_IMAGE_TAG}"
+                        }
+                    }
+                }
             }
         }
     }
