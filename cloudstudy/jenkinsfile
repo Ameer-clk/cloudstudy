@@ -10,7 +10,7 @@ pipeline {
         REPOSITORY_NAME='cloudstudy'
         REPOSITORY_URI="${env.AWS_ACCOUNT}.dkr.ecr.${env.REGION}.amazonaws.com/${env.REPOSITORY_NAME}"
         SONARQUBE_ENDPOINT='http://44.204.76.82/'
-        SONARQUBE_TOKEN='cd02aed12bfb7f5c90ee69b00d55b18a7f25bdd5'
+        SONARQUBE_TOKEN='3a3b5f4c59c29465f5bb034485198d0faa9aea7a'
     }
     agent any
     stages {
