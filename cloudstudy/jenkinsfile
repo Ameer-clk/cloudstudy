@@ -1,0 +1,54 @@
+pipeline {
+    environment {
+        REGION='us-east-1'
+        CLUSTER='cloudstudycluster'
+        AWS_ACCOUNT='098386855668'
+        SERVICE_NAME='cloudstudy'
+        TASKDEF_NAME='cloudstuydtask'
+        TASKDEF_FILE='ecs_task_def.json'
+        DESIRED_COUNT=1
+        REPOSITORY_NAME='cloudstudy'
+        REPOSITORY_URI="${env.AWS_ACCOUNT}.dkr.ecr.${env.REGION}.amazonaws.com/${env.REPOSITORY_NAME}"
+        SONARQUBE_ENDPOINT='http://44.204.76.82/'
+        SONARQUBE_TOKEN='cd02aed12bfb7f5c90ee69b00d55b18a7f25bdd5'
+    }
+    agent any
+    stages {
+        stage('Build') {
+            steps {
+                sh '''
+                    cd cloudstudy/
+                    echo "Building the cicd demo ngnix docker image.."
+                    docker build -t "${SERVICE_NAME}" .
+                '''  
+            }
+        }
+        stage('Test') {
+            steps {
+                sh '''
+                    echo 'Code Quality and Code Security Testing using Sonarqube.. '
+                    echo 'Testing in progress..'
+                    echo 'The deployment would be failing at this stage if any code quality issues or vulnerabilities are detected in the code'
+                    sh /var/lib/jenkins/sonar-scanner/bin/sonar-scanner -Dsonar.login=$SONARQUBE_TOKEN -Dsonar.host.url=$SONARQUBE_ENDPOINT -Dsonar.projectKey=$JOB_BASE_NAME -Dsonar.projectName=$JOB_BASE_NAME -Dsonar.qualitygate.wait=true
+                '''
+            }
+        }
+        stage('Deploy') {
+            steps {
+                sh '''
+                    cd cloudstudy/
+                    echo 'Deploying to Amazon ECS....'
+                    docker tag ${SERVICE_NAME}:latest ${REPOSITORY_URI}:latest
+                    eval $(aws ecr get-login --no-include-email --region ${REGION})
+                    docker push ${REPOSITORY_URI}:latest
+                    echo 'Setting desired container count to 0'
+                    aws ecs update-service --cluster ${CLUSTER} --service ${SERVICE_NAME} --task-definition ${TASKDEF_NAME} --desired-count 0
+                    echo 'Updating task definition'
+                    aws ecs register-task-definition --cli-input-json file://${TASKDEF_FILE}
+                    echo 'Deploying to ECS Cluster: ${CLUSTER}'
+                    aws ecs update-service --cluster ${CLUSTER} --service ${SERVICE_NAME} --task-definition ${TASKDEF_NAME} --desired-count ${DESIRED_COUNT} --force-new-deployment
+                '''
+            }
+        }
+    }
+}
