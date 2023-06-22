@@ -5,7 +5,7 @@
     "containerDefinitions": [
       {
         "name": "cloudstudy",
-        "image": "ami-007855ac798b5175e.dkr.ecr.us-east-1.amazonaws.com/:cloudtstudylatest",
+        "image": "ami-007855ac798b5175e.dkr.ecr.us-east-1.amazonaws.com/:cloudtstudy",
         "logConfiguration": {
           "logDriver": "awslogs",
           "options": {
