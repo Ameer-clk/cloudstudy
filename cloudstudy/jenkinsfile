@@ -25,16 +25,17 @@ pipeline {
         }
         stage('Test') {
             steps {
-                sh '''
-                      node {
-  stage('SCM') {
-    checkout scm
-  }
-  stage('SonarQube Analysis') {
-    def mvn = tool 'Default Maven';
-    withSonarQubeEnv() {
-      sh "${mvn}/bin/mvn clean verify sonar:sonar -Dsonar.projectKey=cloudstudy"
-                '''
+                node {
+                    stage('SCM') {
+                        checkout scm
+                    }
+                    stage('SonarQube Analysis') {
+                        def mvn = tool 'Default Maven';
+                        withSonarQubeEnv() {
+                            sh "${mvn}/bin/mvn clean verify sonar:sonar -Dsonar.projectKey=cloudstudy"
+                        }
+                    }
+                }
             }
         }
         stage('Deploy') {
@@ -45,8 +46,8 @@ pipeline {
                     docker tag ${SERVICE_NAME}:latest ${REPOSITORY_URI}:latest
                     eval $(aws ecr get-login --no-include-email --region ${REGION})
                     docker push ${REPOSITORY_URI}:latest
-                    echo 'Setting desired container count to 0'
-                    aws ecs update-service --cluster ${CLUSTER} --service ${SERVICE_NAME} --task-definition ${TASKDEF_NAME} --desired-count 0
+                    echo 'Setting desired container count to 1'
+                    aws ecs update-service --cluster ${CLUSTER} --service ${SERVICE_NAME} --task-definition ${TASKDEF_NAME} --desired-count 1
                     echo 'Updating task definition'
                     aws ecs register-task-definition --cli-input-json file://${TASKDEF_FILE}
                     echo 'Deploying to ECS Cluster: ${CLUSTER}'
@@ -56,4 +57,3 @@ pipeline {
         }
     }
 }
-***JENKINS_SERVER_URL***/job/***JENKINS_JOB_NAME***/build?token=***JENKINS_BUILD_TRIGGER_TOKEN***
