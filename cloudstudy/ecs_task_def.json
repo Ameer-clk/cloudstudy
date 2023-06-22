@@ -1,5 +1,5 @@
 {
-    "family": "jenkins",
+    "family": "cloudstudy",
     "executionRoleArn": "arn:aws:iam::098386855668:instance-profile/ecsExicutionRole",
     "networkMode": "awsvpc",
     "containerDefinitions": [
