@@ -1,35 +1,34 @@
 {
-    "family": "cloudstudy",
-    "executionRoleArn": "arn:aws:iam::098386855668:instance-profile/ecsExicutionRole",
-    "networkMode": "awsvpc",
-    "containerDefinitions": [
-      {
-        "name": "cloudstudy",
-        "image": "ami-007855ac798b5175e.dkr.ecr.us-east-1.amazonaws.com/:cloudtstudy",
-        "logConfiguration": {
-          "logDriver": "awslogs",
-          "options": {
-            "awslogs-group": "/ecs/cloudtstudy",
-            "awslogs-region": "us-east-1",
-            "awslogs-stream-prefix": "ecs"
-          }
-        },
-        "essential": true,
-        "portMappings": [
-          {
-            "containerPort": 80,
-            "hostPort": 80,
-            "protocol": "tcp"
-          }
-        ],
-        "entryPoint": [],
-        "command": []
-      }
-    ],
-    "cpu": "256",
-    "memory": "512",
-    "requiresCompatibilities": [
-      "FARGATE"
-    ]
-  }
-  
+  "family": "cloudstudy",
+  "executionRoleArn": "arn:aws:iam::098386855668:instance-profile/ecsExecutionRole",
+  "networkMode": "awsvpc",
+  "containerDefinitions": [
+    {
+      "name": "cloudstudy",
+      "image": "098386855668.dkr.ecr.us-east-1.amazonaws.com/cloudtstudy:latest",
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/cloudtstudy",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 80,
+          "hostPort": 80,
+          "protocol": "tcp"
+        }
+      ],
+      "entryPoint": [],
+      "command": []
+    }
+  ],
+  "cpu": "256",
+  "memory": "512",
+  "requiresCompatibilities": [
+    "FARGATE"
+  ]
+}
