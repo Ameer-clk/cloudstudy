@@ -2,10 +2,9 @@ node {
   stage('SCM') {
     checkout scm
   }
-  stage('SonarQube Scanner') {
-    def mvn = tool 'sonar-maven';
+  stage('SonarQube Analysis') {
     withSonarQubeEnv() {
-      sh "${mvn}/bin/mvn clean verify sonar:sonar -Dsonar.projectKey=myproject"
+      sh "./gradlew sonarqube"
     }
   }
 }
